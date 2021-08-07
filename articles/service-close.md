@@ -3,7 +3,7 @@ title: "サービス終了決定をふりかえって"
 emoji: "👻"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["サービス終了"]
-published: false
+published: true
 ---
 
 # きっかけ
