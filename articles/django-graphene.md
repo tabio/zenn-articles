@@ -8,7 +8,7 @@ published: true
 
 ## 概要
 
-DjangoでGraphqlが使えないか調査していたら[graphene-django](https://github.com/graphql-python/graphene-django/)https://github.com/tabio/django-graphene-test/raw/main/documents/graphql_results.pngeを見つけたので使ってみました
+DjangoでGraphqlが使えないか調査していたら[graphene-django](https://github.com/graphql-python/graphene-django/)を見つけたので使ってみました
 
 
 ## ゴール
