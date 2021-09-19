@@ -3,7 +3,7 @@ title: "AppSheetで筋トレログアプリを作ってみた"
 emoji: "🍓"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["AppSheet", "ノーコード"]
-published: false
+published: true
 ---
 
 ## はじめに
