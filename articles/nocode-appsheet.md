@@ -1,6 +1,6 @@
 ---
 title: "AppSheetで筋トレログアプリを作ってみた"
-emoji: "🍓"
+emoji: "💪"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["AppSheet", "ノーコード"]
 published: true
