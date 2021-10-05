@@ -15,7 +15,33 @@ https://www.amazon.co.jp/dp/487311893X
 
 ## 3章：GraphQLの問い合わせ言語
 
-TBD
+|項目|memo|
+|---|---|
+|SQL|DBに対してデータを操作するための言語|
+|REST|SQLの考えを受け継いで、クエリではなくURLのエンドポイントに対してデータ操作をする考え方|
+|GraphQL|SQLの考えを受け継いだインターネットのための問い合わせ言語(DB、ファイル、REST API、WebSocketなどあらゆるモノに対する問い合わせ)|
+
+|機能|SQL|GraphQL|memo|
+|---|---|---|---|
+|検索|Select|Query|dataフィールドにリクエスト結果が入っている。エラーはerrorフィールド|
+|登録|Create|Mutation||
+|更新|Update|Mutation||
+|削除|Delete|Mutation||
+|監視| - |Subscription|ソケット通信でデータの変更を検知するもの(SQLにはない)|
+
+
+#### GraphQL実行ツール
+
+|ツール名|memo|
+|---|---|
+|[GraphiQL](https://github.com/graphql/graphiql)|Facebook社製|
+|[GraphQL Playground](https://github.com/graphql/graphql-playground)|Prismaチーム製。Web版は[こちら](https://www.graphqlbin.com/v2/new)|
+|[Altair GraphQL Client](https://github.com/altair-graphql/altair)|最近使っているやつ。すべてのプラットフォームに対応している|
+
+#### 公開 GraphQL API
+
+GraphQLのスキーマの参考になる[一覧](https://github.com/APIs-guru/graphql-apis)
+
 
 ## 2章：グラフ理論
 
