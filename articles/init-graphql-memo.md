@@ -38,9 +38,130 @@ https://www.amazon.co.jp/dp/487311893X
 |[GraphQL Playground](https://github.com/graphql/graphql-playground)|Prismaチーム製。Web版は[こちら](https://www.graphqlbin.com/v2/new)|
 |[Altair GraphQL Client](https://github.com/altair-graphql/altair)|最近使っているやつ。すべてのプラットフォームに対応している|
 
+上記のツールはAPIスキーマの定義書を表示してくれる
+これは裏側でGraphQLのイントロスペクションという機能を使っている
+具体的にはAPIのスキーマを返すQueryオペレーションを実行している
+
+```graphql: イントロスペクションの例
+query {
+  __schema {
+    types {
+      name
+      description
+    }
+  }
+}
+```
+
 #### 公開 GraphQL API
 
 GraphQLのスキーマの参考になる[一覧](https://github.com/APIs-guru/graphql-apis)
+
+
+#### Queryオペレーション
+
+```graphql: 選択セット、クエリ引数、スカラー型、オブジェクト型
+query lifts {
+  allLifts(status: ClOSED) { # status: CLOSED部分がクエリ引数(クエリ結果をフィルタリングしたいとき)
+    name
+    status
+  }
+  trailAccess { # 選択セット(波括弧部分のこと) start
+    name
+    difficulty
+  }             # 選択セット end
+  Lift(id: "jazz-cat") {
+    capacity      # スカラー型：Int, Float, String, Boolean, ID型からなる
+    trailAccess { # オブジェクト型： 1つ以上のフィールドの集合
+      name
+      difficulty
+    }
+  }
+}
+```
+
+フラグメントはフィールドが冗長化している時に有効
+1つの修正で一気に変更が適応できる
+
+```graphql: フラグメント
+fragment liftInfo on Lift {
+  name
+  status
+}
+
+query {
+  Lift(id: "jazz-cat") {
+    ...liftInfo
+  }
+  Trail(id: "river-run") {
+    name
+    difficulty
+    accessedByLifts {
+      ...liftInfo
+    }
+  }
+}
+```
+
+こういうリストの中身に異なる型を持つ場合への対応策としてユニオン型
+```
+[
+  {
+    "name": "Cardio",
+    "repos": 100
+  },
+  {
+    "name": "Comp Sci",
+    "subject": "Computer Science",
+    "students": 12
+  }
+]
+```
+
+```graphql:ユニオン型
+query schedule {
+  agenda {
+    ...on Workout { # フラグメントを選択セットの中に書き込む方法(インラインフラグメント)
+      name
+      reps
+    }
+    ...on StudyGroup {
+      name
+      subject
+      students
+    }
+  }
+}
+```
+
+一方で必須のフィールド以外に任意のフィールドが入ってくる場合がある時はインターフェース
+```
+[
+  {
+    "name": "hoge",
+    "start": 10,
+    "end": 30,
+  },
+  {
+    "name": "hoge",
+    "start": 10,
+    "end": 30,
+    "memo": "fuga"
+  },
+]
+```
+
+```graphql
+query schedule {
+  agenda {
+    name
+    start
+    end
+    ...on Workout {
+      memo
+    }
+  }
+```
 
 
 ## 2章：グラフ理論
