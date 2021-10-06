@@ -15,8 +15,30 @@ https://www.amazon.co.jp/dp/487311893X
 
 ## 4章：スキーマの設計
 
-TBD
+GraphQLスキーマは、どんなオペレーションがあってどんなフィールドが取得できるかを定義したもの
+スキーマファイルは慣習で **.graphql** とされている
 
+ID型は固有の識別子を格納するもの。JSONとしては文字列で返されるが、String型とは異なり値が重複しないことをバリデーションしてくれる
+**!** はnullにならないの意
+```graphql
+type Photo {
+  id: ID!
+  name: String!
+  description: String
+}
+```
+
+IDやStringなどはスカラー型と呼ばれて、他に「Int、Float、Boolean」がある。
+カスタムもできる
+```graphql
+scalar DateTime # カスタムスカラー型として定義
+
+type Photo {
+  id: ID!
+  created: Datetime
+}
+```
+よくあるカスタムスカラー型が実装されている[パッケージ](https://github.com/stylesuxx/graphql-custom-types)
 
 ## 3章：GraphQLの問い合わせ言語
 
