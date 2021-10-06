@@ -35,7 +35,7 @@ TBD
 |監視| - |Subscription|ソケット通信でデータの変更を検知するもの(SQLにはない)|
 
 
-#### GraphQL実行ツール
+### GraphQL実行ツール
 
 |ツール名|memo|
 |---|---|
@@ -58,12 +58,12 @@ query {
 }
 ```
 
-#### 公開 GraphQL API
+### 公開 GraphQL API
 
 GraphQLのスキーマの参考になる[一覧](https://github.com/APIs-guru/graphql-apis)
 
 
-#### Queryオペレーション
+### Queryオペレーション
 
 ```graphql: 選択セット、クエリ引数、スカラー型、オブジェクト型
 query lifts {
@@ -168,7 +168,7 @@ query schedule {
   }
 ```
 
-### Mutation
+### Mutationオペレーション
 
 変数は$で始まる
 動的にパラメーターを埋め込める
@@ -183,7 +183,7 @@ mutation createSong($title: String! $numberOne: Int) {
 }
 ```
 
-### Subscription
+### Subscriptionオペレーション
 
 Facebookのいいね数をリアルタイムで反映する仕組みとして利用
 表示時にSubscriptionでいいね数を監視
