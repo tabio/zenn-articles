@@ -13,6 +13,11 @@ published: true
 
 https://www.amazon.co.jp/dp/487311893X
 
+## 4章：スキーマの設計
+
+TBD
+
+
 ## 3章：GraphQLの問い合わせ言語
 
 |項目|memo|
@@ -162,6 +167,57 @@ query schedule {
     }
   }
 ```
+
+### Mutation
+
+変数は$で始まる
+動的にパラメーターを埋め込める
+
+```graphql
+mutation createSong($title: String! $numberOne: Int) {
+  addSong(title:$title, numberOne:$numberOne) {
+    id
+    title
+    numberOne
+  }
+}
+```
+
+### Subscription
+
+Facebookのいいね数をリアルタイムで反映する仕組みとして利用
+表示時にSubscriptionでいいね数を監視
+いいね数が更新されるとSubscriptionを実行しているクライアントに対してデータがpushされる
+クライアントは通知を受けて表示を更新するという仕組み
+
+Subscriptionで購読する
+![](/images/init-graphql-memo/subscription-1.png)
+
+別タブで値を更新する
+![](/images/init-graphql-memo/subscription-2.png)
+
+Subscriptionしたタブで新しい値が流れてきているのがわかる
+![](/images/init-graphql-memo/subscription-3.png)
+
+
+### 抽象構造木(AST: Abstract Syntax Tree)
+
+> curl -X POST -d "{ \"query\": \"query { viewer { login }}\"}" https://hoge.com/graphql
+
+クエリ自体は上記の様に文字列で送られてくる
+それをどうやって解釈しているかの話
+
+抽象構造木は構文構造をデータ構造に起こしたもの
+DOMツリーの様に要素毎に意味を持ち階層化されているというのがイメージしやすい
+
+一覧のフローを図示
+```mermaid
+graph TB
+    A[クライアント側からはクエリは文字列として渡される] -->|引数や波括弧やコロンをパース| B(断片化)
+    B -->|字句解析| C(抽象構造木)
+    C -->|ASTを走査してスキーマに対してバリデーション| D(型がスキーマと一致していたらオペレーション実行)
+```
+
 
 
 ## 2章：グラフ理論
