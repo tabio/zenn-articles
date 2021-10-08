@@ -19,12 +19,13 @@ GraphQLスキーマは、どんなオペレーションがあってどんなフ�
 スキーマファイルは慣習で **.graphql** とされている
 
 ID型は固有の識別子を格納するもの。JSONとしては文字列で返されるが、String型とは異なり値が重複しないことをバリデーションしてくれる
-**!** はnullにならないの意
+**!** はnullにならないの意(null成約)
 ```graphql
 type Photo {
   id: ID!
   name: String!
   description: String
+  numbers: [Int!]! # リストにもnull成約を付けることができる。べき論として配列の値がnullのみ場合は空配列にする。
 }
 ```
 
@@ -39,6 +40,112 @@ type Photo {
 }
 ```
 よくあるカスタムスカラー型が実装されている[パッケージ](https://github.com/stylesuxx/graphql-custom-types)
+
+Enumもある。よく見るEnumの定義の仕方と同じ
+以下の場合、categoryにHOGEなどの定義外の値を入れるクライアントに返すことはできない
+```graphql
+enum PhotoCategory {
+  SELFIE
+  ACTION
+  GRAPHIC
+}
+
+type Photo {
+  id: ID!
+  name: String!
+  category: PhotoCategory!
+}
+```
+
+### 多:多
+
+Userは友人達の情報を持っていて、友人達はそれぞれどこで知り合ってどのぐらいの期間友人関係かを持っている
+これをGraphQLで表現するとこんな感じになる
+```graphql
+type User {
+  friends: [Friends!]!
+}
+
+type Friends: {
+  friends: [User!]!
+  howLong: Int!
+  whereWeMet: Location
+}
+```
+
+### ユニオン型 / インターフェース
+
+3章でユニオン型やインターフェースでのQueryオペレーションについて学んだので、ここではそれをどうやって定義しているかについて記載されている
+
+```graphql:ユニオン型
+union AgendaItem = StudyGroup | Workout
+
+type StudyGroup {
+  name: String!
+  subject: String!
+}
+
+type Workout {
+  name: String!
+  reps: Int!
+}
+
+type Query {
+  agenda: [AgendaItem!]!
+}
+```
+
+```graphql:インターフェース
+interface AgendaItem {
+  name: String!
+  start: String!
+  end: String!
+}
+
+# interfaceで定義したものは必ずフィールドとして含めないといけない
+type StudyGroup impliments AgendaItem {
+  name: String!
+  start: String!
+  end: String!
+  topic: String!
+}
+```
+
+### 引数
+
+引数を使うことで絞り込みができる。書き方はシンプル
+```graphql
+# スキーマ
+type Query {
+  Photo(id: ID!): Photo! # IDが必須なのでない場合はGraphQLサーバー側でエラー
+  allPhotos(category: PhotoCategory): [Photo!]! # categoryにnullが入ってきた場合はすべてのPhotoを返す
+}
+
+# Queryオペレーション
+query {
+  Photo(id: "hoge") {
+    name
+    description
+  }
+}
+```
+
+### データページング
+
+実際に運用していくと一度に取得できる件数の絞り込みが必要になってくる
+GraphQLではfirstやstartを利用したデータページングを用いている
+**first** はmysqlでいうlimit
+**start** はmysqlでいうoffset
+```graphql
+type Query {
+  allUsers(first: Int=50 start: Int=0): [User!]!
+}
+```
+
+### ソート
+
+TBD
+
 
 ## 3章：GraphQLの問い合わせ言語
 
