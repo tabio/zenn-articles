@@ -130,21 +130,88 @@ query {
 }
 ```
 
-### データページング
+### データページングとソート
 
 実際に運用していくと一度に取得できる件数の絞り込みが必要になってくる
-GraphQLではfirstやstartを利用したデータページングを用いている
-**first** はmysqlでいうlimit
-**start** はmysqlでいうoffset
+ページングに必要な引数(mysqlでいうlimitやoffset)を定義してあげる
+ソートも同じ要領で定義する
 ```graphql
+enum SortDirection {
+  DESC
+  ASC
+}
+
+enum SortField {
+  name
+  createdAt
+}
+
 type Query {
-  allUsers(first: Int=50 start: Int=0): [User!]!
+  allUsers(first: Int=50 start: Int=0 sort: SortDirection = DESC sortBy: SortField = name): [User!]!
 }
 ```
 
-### ソート
+### 入力型
 
-TBD
+queryでもmutationでも運用していくと引数が多くなり非常に見づらくなる
+そうした場合は入力型を使って入力値をまとめてあげると良い
+
+```graphql
+input PostPhotoInput {
+  name: String!
+  description: String
+  category: PhotoCategory=PORTRAIT
+}
+
+type Mutation {
+  postPhoto(input: PostPhotoInput!): Photo!
+}
+
+# Mutationの実行
+mutation newPhoto($input: PostPhotoInput!) {
+  postPhoto(input: $input) {
+    id
+    name
+    createdAt
+  }
+}
+```
+
+### 返却型
+
+レスポンスの型もカスタムで作れるという話
+
+```graphql
+type AuthPayload {
+  user: User!
+  token: String!
+}
+
+type Mutation {
+  githubAuth(code: String!): AuthPayload!
+}
+```
+
+### スキーマのドキュメント化
+
+3章のイントロスペクションでGraphQLクライアントツールから定義が閲覧できたと思うが、その際に定義書をより分かりやすくできるようにコメントを追加できる。
+コメント部分が定義書にも反映されるので便利
+
+```graphql
+type User {
+  """
+  ユーザーのユニークなGitHubログインID
+  """
+  githubLogin: ID!
+}
+
+type Mutation  {
+  githubAuth(
+    "code(引数)に対してもコメント付けれる"
+    code: String!
+  ): AuthPayload!
+}
+```
 
 
 ## 3章：GraphQLの問い合わせ言語
