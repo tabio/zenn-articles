@@ -13,6 +13,42 @@ published: true
 
 https://www.amazon.co.jp/dp/487311893X
 
+## 7章：GraphQLの実戦投入にあたって
+
+### セキュリティ対策
+
+- リクエストタイムアウト
+  - リクエスト全体に対して制限を書けるか、リゾルバ毎に適用するかする
+- データ制限(巨大なクエリ対策)
+  - 100件以上は取得しないなどのでロジックを入れる
+      ```graphql
+      allPhotos: (root, data, context) {
+        if (data.first > 100) {
+          throw new Error("100件以上はリクエストできません");
+        }
+      }
+      ```
+- クエリ深さ制限
+  - 無向グラフはメリットではあるがパフォーマンスに直結する
+  - [graphql-depth-limit](https://www.npmjs.com/package/graphql-depth-limit)などを導入して意図しない深さのクエリが発行されないようにする
+- クエリの複雑度を検知してアラート上がるようにしておく
+  - [graphql-validation-complexity](https://www.npmjs.com/package/graphql-validation-complexity)
+- GraphQLサービスのモニターによりパフォーマンス監視
+  - ApolloはApollo Engineを利用することができるので便利
+
+## 5章：GraphQLサーバーの実装
+
+### リゾルバ
+
+スキーマはクライアントが作成できるクエリ操作と様々な型の関係性を定義
+スキーマはデータの要件を記述するけどデータの取得作業はできない
+その役割を担うのが **リゾルバ**
+
+### コンテキスト
+
+どのリゾルバもアクセスできるグローバルな情報(認証情報やDB情報、ローカルキャッシュなど)を保存する場所
+
+
 ## 4章：スキーマの設計
 
 GraphQLスキーマは、どんなオペレーションがあってどんなフィールドが取得できるかを定義したもの
