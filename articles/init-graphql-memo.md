@@ -36,6 +36,11 @@ https://www.amazon.co.jp/dp/487311893X
 - GraphQLサービスのモニターによりパフォーマンス監視
   - ApolloはApollo Engineを利用することができるので便利
 
+### Slack
+
+- [GraphQL Slack](https://graphql-slack.herokuapp.com/)
+- [Apollo Community](https://community.apollographql.com/)
+
 ## 5章：GraphQLサーバーの実装
 
 ### リゾルバ
@@ -59,6 +64,80 @@ const resolvers = {
   Query: { # Queryオブジェクトで定義されているのでここも同じtypenameである必要がある
     totalPhotos: () => 50 # クエリを作成する場合はスキーマと同じ名前のリゾルバ関数にする必要がある
   }
+}
+```
+
+#### トリビアルリゾルバ
+オブジェクトをGraphQL側で拡張したいときに使う
+Presenter的な役割(DBに保存されてないが表示用に使いたい)的な位置づけと一旦理解
+
+```graphql
+let photos = [
+  {
+    "id": "1",
+    "name": "photo name",
+  },
+];
+
+type Photo {
+  id: ID!
+  name: String!
+  url: String!
+}
+
+type Query {
+  allPhotos: [Photo!]!
+}
+
+query listPhotos {
+  allPhotos {
+    id
+    name
+    url
+  }
+}
+
+const resolvers = {
+  Query: {
+    allPhotos: () => photos
+  },
+  Photo: {
+    url: parent => `https://${parent.id}.com` # letで定義したphotosの中にurlフィールド無くても、resolverでPhotoオブジェクトを拡張することができる
+  }
+}
+```
+
+#### カスタムスカラー型
+
+DateTimeなどGraphQL側が用意してない型を独自定義する場合の話
+GraphQLScalarTypeを使って表現する
+GraphQLScalarTypeで用意している3つのメソッドは要理解
+- serialize: レスポンスに含める際に定義した関数に沿って処理
+- parseValue: クライアント側から送信される値をパースする際の関数
+- parseLiteral: クエリドキュメントに直接追加された場合の関数。最低限その値を返すだけで良い。
+
+```graphql
+const { GraphQLScalarType } = require(`graphql`);
+
+type Query {
+  allPhotos(after: DateTime): [Photo!]!
+}
+
+const resolvers = {
+  DateTime: new GraphQLScalarType({
+    name: `DateTime`,
+    description: `A valid date time value.`,
+    parseValue: value => new Date(value),
+    serialize: value => new Date(value).toISOString(),
+    parseLiteral: ast => ast.value,
+  }),
+  Query: {
+    totalPhotos: () => photos.length,
+    allPhotos: (_parent, args) => {
+      console.log(args.after); # parseValueで処理された値が入っている
+      return photos;
+    }
+  },
 }
 ```
 
