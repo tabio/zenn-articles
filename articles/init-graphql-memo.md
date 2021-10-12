@@ -145,6 +145,20 @@ const resolvers = {
 
 どのリゾルバもアクセスできるグローバルな情報(認証情報やDB情報、ローカルキャッシュなど)を保存する場所
 
+こんな感じでDBクライアントをApolloServerに渡して起動させる
+```js
+const db = client.db()
+const context = { db }
+const server = new ApolloServer({typeDefs, resolvers, context})
+```
+
+リゾルバ側では第3引数が上記で渡されたcontextが参照できる仕組みなので、dbから値を参照するロジックが書ける
+```graphql
+Query: {
+  totalPhotos: (parent, args, { db }) => db.collection(`photo`).estimatedDocumentCount()
+}
+```
+
 
 ## 4章：スキーマの設計
 
