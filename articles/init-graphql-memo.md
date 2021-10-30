@@ -13,6 +13,34 @@ published: true
 
 https://www.amazon.co.jp/dp/487311893X
 
+## 付録：Relay
+
+RelayはFacebookが作ったクライアントライブラリ
+ReactやReact Nativeで活用しやすいようにGraphQLのSchemaの制約を追加しているのが特徴
+
+- Global Object Identification
+全データ共通のユニークなIDを付与するようにスキーマにNodeインターフェースを定義する
+Query型のルートにnode(id: ID!): Nodeを追加する必要がある
+これによりオブジェクト再取得を効率的にするもの
+```graphql
+type Query {
+  node(id: ID!): Node! # nodeのIDのみでデータが取得できるように
+}
+
+interface Node {
+  id: ID!
+}
+
+type User impliments Node {
+  id: ID!
+  name: String!
+}
+```
+
+IDのフォマット設計も重要。ユニークである必要がる。
+例えば userのidが12345の場合、**USER:12345** という風にテーブル名をPrefixとして付与する
+
+
 ## 7章：GraphQLの実戦投入にあたって
 
 ### セキュリティ対策
