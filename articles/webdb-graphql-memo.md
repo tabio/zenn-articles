@@ -3,7 +3,7 @@ title: "WEB+DB PRESS Vol.125のGraphQL備忘録"
 emoji: "📗"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["GraphQL"]
-published: false
+published: true
 ---
 
 ## 概要
