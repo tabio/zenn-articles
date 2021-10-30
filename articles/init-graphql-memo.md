@@ -18,7 +18,8 @@ https://www.amazon.co.jp/dp/487311893X
 RelayはFacebookが作ったクライアントライブラリ
 ReactやReact Nativeで活用しやすいようにGraphQLのSchemaの制約を追加しているのが特徴
 
-- Global Object Identification
+### Global Object Identification
+
 全データ共通のユニークなIDを付与するようにスキーマにNodeインターフェースを定義する
 Query型のルートにnode(id: ID!): Nodeを追加する必要がある
 これによりオブジェクト再取得を効率的にするもの
@@ -37,9 +38,71 @@ type User impliments Node {
 }
 ```
 
-IDのフォマット設計も重要。ユニークである必要がる。
+IDのフォマット設計も重要。ユニークである必要がる
 例えば userのidが12345の場合、**USER:12345** という風にテーブル名をPrefixとして付与する
+さらに、これをbase64でエンコードするのが典型とのこと
 
+
+### Cursor Connections
+
+カーソルベースのページングについての仕様のこと。
+良くあるページベースのページングの場合、データ登録される頻度が高いとリクエストした時間の前後ですぐズレてしまう。  
+(2ページ目の10件取得後に、新しいデータが登録されたら2ページ目の中身は本当の2ページ目ではない)
+[スタディプラス開発者ブログのカーソルベースページング](https://tech.studyplus.co.jp/entry/2018/12/25/132345)の具体例が分かりやすいので参考になる。
+ページングを順序通り表現できる反面、デメリットとしては全体の件数が取得できない。
+
+ページングのルールとしては
+1. xxxConnectionを持つ型を用意して返す
+1. first: Int!とafter: Stringを引数に追加
+1. カーソル情報の管理はEdge型フィールド
+1. ページング情報の管理はPageInfo型フィールド
+
+```graphql
+type Query {
+  repositories(
+    # 次方向ページングのため
+    first: Int
+    after: String
+    # 前方向ページングのため
+    last: Int
+    before: String
+  ): RepositoryConnection
+}
+
+type RepositoryConnection {
+  pageInfo: PageInfo
+  edges: [RepositoryEdge]
+}
+
+type PageInfo {
+  hasPreviousPage: Boolean!
+  startCursor: String
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type RepositoryEdge {
+  cursor: String!
+  node: Repository
+}
+
+type Repository {
+  id: ID!
+  name: String
+}
+```
+
+### Mutations updater
+
+Mutationは作成・更新・削除を行う。その際にクライアント側のキャッシュも一緒に変更を反映させたいよねというもの。
+WEB+DB PRESS Vol.125のミューテーションの戻り値の項目が参考になる。
+
+- 作成の場合は作成されたリソース全体を返す
+  - relayは@appendEdge、@prependEdge、@appendNode、@prependNodeのディレクティブを利用すると良い
+- 更新の場合も更新されたリソース全体を返す
+  - relayの場合はNodeインターフェースを実装していれば良しなにキャッシュを更新してくれる
+- 削除の場合はIDを返せば良い
+  - 更新と同じで、Nodeインターフェースを実装していれば良しなにしてくれる
 
 ## 7章：GraphQLの実戦投入にあたって
 
