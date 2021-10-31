@@ -222,3 +222,46 @@ type UserError {
 
 RESTのように明示的にバージョニングする必要はない
 フィールドを失効させたい場合は@deprecatedディレクティブを使ってクライアントに教えてあげれば良い
+
+## GraphQLの運用
+
+### クエリのコスト制限
+
+ページネーションで一度に取得できる件数を制限する
+クエリの深さにも制約をかける
+クエリのコストを計算し一定の範囲内に収まるようにする
+GraphQLのライブラリの一部にはクエリコストに対するヘルパー用意しているものがあるので確認する
+
+なぜ気にしないといけないかというと、 以下のように最初のブログ記事を100件取得し
+そのブログを介して記事を100件取得となると10000万件のデータを取得するクエリを簡単にかけてしまい凄い負荷がかかるから
+```graphql
+query {
+  blog(id: "abc") {
+    posts(first: 100) {
+      edges {
+        node {
+          blog {
+            posts(first: 100) {
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Persisted Query
+
+予め登録されたクエリのみ許可するリストを作っておく
+事前に検証されたクエリしか実行されないので上記のような負荷のかかるクエリの発行を防げる
+RelayやApolloなどはPersisted Queryをサポートしている
+
+### トレーシング
+
+GraphQLはエンドポイントが1つなので、どのオペレーションが負荷かかっているかが観測できない
+AWSならばX-Ray、Google Cloudの場合はCloud Trace。Apollo使っているのであればApollo Tracingがある
+
+### 便利ツールを使う
+
+[VSCode GraphQL](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql)
