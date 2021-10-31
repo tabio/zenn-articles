@@ -166,6 +166,13 @@ prismaはDataloader対応が良しなにされている様子([参考](https://q
 
 TBD
 
+### Mutationの設計
+
+- セマンティクスに合わせて複数のミューテーションに分割をおすすめ
+  - 記事公開はpublishPostにする(updatePostとは別にする)
+- [戻り値の設計](https://zenn.dev/tabio/articles/init-graphql-memo#mutations-updater)
+  - クライアントのキャッシュを意識した設計にするためのもの
+
 ### エラー表現
 
 基本はレスポンスにerorrsフィールドを持ち、中身のフィールドは以下
