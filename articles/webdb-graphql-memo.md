@@ -83,3 +83,74 @@ query listPosts($isBody: boolean!) {
   }
 }
 ```
+
+## サーバー側
+
+### RESTの以下のツラミをGraphQLでは解決できる
+
+- クライアントに特化させたAPIを作らないといけなかったりする(メンテナンス性低い)
+- 1つ画面でAPIを何度もリクエストしないといけなかったりする
+
+### GraphQLフェデレーション
+
+マイクロサービスのAPI Gatewayパターンと相性が良い
+要は複数のAPIを束ねる技術
+ドメインごとのチームで並列でAPI開発できるので効率化できる
+[GraphQL Federation](https://www.apollographql.com/docs/federation/federation-spec/)という仕様書が公開されている
+
+
+### サーバーとスキーマとリゾルバの関係
+
+多くのサーバーサイド用のライブラリがあるが[GraphQL.js](https://github.com/graphql/graphql-js)を参考にしたものが大半
+ライブラリ(GraphQLサーバー)から呼び出される関数のことを「リゾルバ」という
+リゾルバはスキーマで定義されている個々のフィールドの値を解決する役割を担う
+
+
+### スキーマとリゾルバの関連性の管理
+
+コードファースト・スキーマファーストの2つのアプローチがある
+
+|種別名|例|
+|---|---|
+|コードファースト|GraphQL.jsやNexus|
+|スキーマファースト|Apollo Server|
+
+```graphql
+# コードファースト: スキーマとリゾルバ一体化
+query: new GraphQLObjectType({
+  name: 'Query',
+  fields: {
+    hello: {
+      type: GraphQLString,
+      resolve: () => 'hello world',
+    }
+  }
+})
+```
+
+```graphql
+# スキーマファースト：スキーマとリゾルバが分離
+const typeDefs = gql`
+  type Query {
+    hello: String
+  }
+`;
+
+const resolvers = { # リゾルバがスキーマ型と一致しているか保証されてないのでフォローが必要(GraphQL Code Generatorなど)
+  Query: {
+    hello: () => 'hello world',
+  }
+};
+
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+});
+```
+
+### N+1問題対策
+
+データローダーという仕組みを導入する
+１つ１つのデータの取得を **遅延評価** して一括で処理できるようにするもの
+dataloaderパッケージを追加してリゾルバを跨いで共有できるcontextにdataloaderインスタンを保存しておくのが良い
+prismaはDataloader対応が良しなにされている様子([参考](https://qiita.com/joe-re/items/6e09e741ed2e0c6637b0#dataloader))
