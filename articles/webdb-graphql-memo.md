@@ -154,3 +154,64 @@ const server = new ApolloServer({
 １つ１つのデータの取得を **遅延評価** して一括で処理できるようにするもの
 dataloaderパッケージを追加してリゾルバを跨いで共有できるcontextにdataloaderインスタンを保存しておくのが良い
 prismaはDataloader対応が良しなにされている様子([参考](https://qiita.com/joe-re/items/6e09e741ed2e0c6637b0#dataloader))
+
+## 実践パターン
+
+### Relayの追加仕様で参考になるもの
+
+- [Nodeインターフェース](https://zenn.dev/tabio/articles/init-graphql-memo#global-object-identification)
+- [ページネーション](https://zenn.dev/tabio/articles/init-graphql-memo#cursor-connections)
+
+### Viewerパターン
+
+TBD
+
+### エラー表現
+
+基本はレスポンスにerorrsフィールドを持ち、中身のフィールドは以下
+- message
+- locations
+- paths
+
+GraphQLはエラーのフィールド拡張を認めている
+extensionsフィールドを追加して、httpのステータスコードなどを持たせるのが良い
+
+```graphql
+{
+  "errors": {
+    "message": "登録が失敗しました",
+    "locations": [{"line": 2, "column": 3}],
+    "path": ["node"],
+    "extensions": {
+      "code": "NOT_FOUND"
+    }
+  }
+}
+```
+
+ミューテーションの入力に対するバリデーション結果などはスキーマ自体にエラーオブジェクトを組み込むのが良い
+
+```graphql
+type Mutation {
+  createPost(
+    blogId: ID!
+    input: PostInput!
+  ): CreatePostPayload!
+}
+
+type CreatePostPayload {
+  userErrors: [UserError!]!
+  post: Post
+}
+
+type UserError {
+  message: String!
+  field: [String!]
+}
+```
+
+
+### APIのバージョニング
+
+RESTのように明示的にバージョニングする必要はない
+フィールドを失効させたい場合は@deprecatedディレクティブを使ってクライアントに教えてあげれば良い
