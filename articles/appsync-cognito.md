@@ -1,30 +1,35 @@
 ---
 title: "AppSyncでCognito認証"
-emoji: "🌰"
+emoji: "🍠"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["AppSync", "Cognito", "AWS"]
-published: false
+published: true
 ---
 
 
 ## 目的
-
 AppSyncでCognito認証をしてみる
+### AppSyncのGraphQL APIの用意
+[前回記事](/articles/appsync-quick-start)にて作成済みのプロダクトを利用する
+### Cognito: ユーザー作成
+Cognitoのコンソール画面から適当なUserpoolを作って、テストで利用すためだけのユーザーを作成しておく
+![](/images/appsync-cognito/cognito_user.png)
 
-## 方法
+### Cognito: クライアントアプリ作成
+テストなのでシークレットの作成はOFF
+![](/images/appsync-cognito/cognito_client_app.png)
 
-### AppSyncの設定
+### AppSync: 認証方法をCognitoに変更
+![](/images/appsync-cognito/setting_auth_mode.png)
 
-#### クイックスタートガイド
+### AppSync: クエリ画面
+認証方法をCognitoに変更したためGraphQL APIが叩けなくなっている
+![](/images/appsync-cognito/query_1.png)
 
-https://docs.aws.amazon.com/ja_jp/appsync/latest/devguide/quickstart.html
+### AppSync: ユーザープールにログイン
+実行ボタン横のユーザープールにログインを押してログイン
+![](/images/appsync-cognito/cognito_login.png)
 
-### Cognitoの設定
-
-### クライアント作成？？
-
-### 認証テスト
-
-### 参考
-
-https://scrapbox.io/tasuwo/AWS_AppSync_%E3%82%92_Amazon_Cognito_%E3%81%A7%E8%AA%8D%E8%A8%BC%E3%81%97%E5%88%A9%E7%94%A8%E3%81%99%E3%82%8B
+### AppSync: ユーザープールにログイン
+無事認証が通り、クエリが実行されていることを確認
+![](/images/appsync-cognito/cognito_login_after.png)
