@@ -80,7 +80,19 @@ published: false
   let length: number = (<string>someValue).length
   let length: number = (someValue as string).length
   ```
-
+- クラス
+  - メンバー修飾子はprivateやpublic以外でいうとprotectedがある
+- enumは数値も文字列も両方定義できる
+  - open endedに準拠しているので同じenumのTypeがあったら自動でマージしてくれる(ただし文字列列挙型に限る)
+    ```typescript
+    type Hoge {
+      Fuga = "fuga"
+    }
+    type Hoge {
+      Foo = "foo"
+    }
+    // HogeはFugaとFooを持つ
+    ```
 
 ## 1章 開発環境と設定
 
