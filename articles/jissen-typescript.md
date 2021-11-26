@@ -3,7 +3,7 @@ title: "実践TypeScriptの備忘録"
 emoji: "🍇"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["javascript"]
-published: false
+published: true
 ---
 
 ## 概要
