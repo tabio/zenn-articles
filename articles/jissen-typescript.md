@@ -10,6 +10,87 @@ published: false
 
 [実践TypeScript](https://www.amazon.co.jp/-/jp/dp/483996937X/)を読んでの備忘録
 
+## 3章 TypeScriptの型推論
+
+- TypeScriptは変数に型を必ずしも付与する必要はない
+  - 代入される値から良しなに型を推論してくれるため
+  - letとconstの変数は推論の挙動が異なるので注意
+    - constはLiteral Typeになる(ゆえにに再代入ができない)
+    ```typescript
+    const hoge = 'Taro'; // hogeの型は'Taro'という文字列リテラルとして推測される
+    ```
+    - しかしconstで定義した変数をletの変数に代入するとLiteral Typesがなくなる
+    ```typescript
+    const hoge = 0 // 0型
+    const hoge2 = 'Taro' as 'Taro' // 明示的にアノテーションを付けると再代入でもLiteral Typesを維持してくれる
+    let fuga = hoge // number型になる
+    let fuga2 = hoge2 // Taro型
+    ```
+  - Array型とTuple型の推論はアノテーションを付けなければ良しなに推論してくれる
+    ```typescript
+    // Array
+    const arr = [0, "1"] // (number | string)[]]
+    const arr2 = [0 as 0, "1" as "1"] // (0 | "1")[]
+
+    // Tuple
+    const tuple1 = [false, 1, "2"] as [boolean, number, string]
+    tuple1.push(false) // OK
+    tuple1.push(true) // NG: 2番目はnumber型なので
+    ```
+  - Object型のプロパティは再代入できる。プロパティをLiteral Typesとして認識させるためにはアサーションを使う
+    ```typescript
+    const obj = {
+      foo: boolean,
+      bar: false as false
+    }
+    obj["foo"] = true // ok
+    obj["bar"] = true // error
+    ```
+  - 関数の戻り値も推論が効く。returnする型がわかりきっている場合は定義してあげた方がバグを生まない安全設計になる。
+    一方で、if文で分岐が複数あり複数の型を返す可能性がある場合は良しなに推論してUnion Typesで型推論してくれる
+    ```typescript
+    function hoge(score: number) {
+      if (score > 10) return null
+      if (score < 5) return "hoge"
+      return score
+    }
+    // 推論結果： function hoge(score: number): number | "hoge" | null
+    ```
+  - Promiseの型推論はresolveに型を付けることで安全設計になる
+    - resolveの型の付け方は2つある(どちらもresolveにstring以外が入るとコンパイルエラー)
+      ```typescript
+      // 関数の戻り値型にアノテーション付けるパターン
+      function hoge: Promise<string> {
+        return new Promise(resolve => {
+          resolve("hoge")
+        })
+      }
+      // Promiseのインスタンス作成時に型を付けるパターン
+      function hoge {
+        return new Promise<string>(resolve => {
+          resolve("hoge")
+        })
+      }
+      ```
+    - async関数はreturnされる型を良しなに推論
+      ```typescript
+      // async自体がPromiseを返すのでPromise<string>
+      async function hoge() {
+        const message = await fuga() // messageにはstringが入ってくる想定
+        return message
+      }
+      ```
+    - importも定義元の型を推論してくれる（ただしrequireはしない）
+      ```typescript
+      // test.ts
+      export const value = 10
+      -----
+      import { value } from "./test"
+      const v1 = value // v1: 10
+      ```
+    - jsonは型を推論してくれるので便利
+      ただし、jsonファイルを外部モジュールとしてインポートするには**tsconfig.json**の**resovleJsonModule**と**esModuleInterop**をtureにする
+
 ## 2章 TypeScriptの基礎
 
 - 関数の **引数** には型を付けましょう
@@ -18,10 +99,10 @@ published: false
 - null型 / undefined型という名前の型がそれぞれ存在する(単体では役に立たない)
 - object型はブレースを使って定義するとエラーを吐かないので注意
   ```typescript
-  let objectBrace: {};
-  let objectType: object;
-  objectBrace = true; // エラーにならない
-  objectType = true;
+  let objectBrace: {}
+  let objectType: object
+  objectBrace = true // エラーにならない
+  objectType = true
   ```
 - 複数の型を1つに結合(Intersection Types: &)
   ```typescript
