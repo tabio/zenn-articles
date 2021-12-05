@@ -10,6 +10,281 @@ published: true
 
 [実践TypeScript](https://www.amazon.co.jp/-/jp/dp/483996937X/)を読んでの備忘録
 
+## 4章 TypeScriptの型安全
+
+どの言語でもそうだけど如何にバグを生まないようにするかは重要
+TypeScriptは型がるためその恩恵を受けやすい(TypeScriptを選ぶ理由の1つになる)
+型推論だけでなく、意図的に型を**絞り込む**ことで更にバグを生みにくくすることが期待できる
+
+### 制約による型安全
+
+TypeScriptでは早期リターンをすることで、型が絞込まれた推論が適用されている
+このような型の絞り込みの処理を**Type Guard**や**ガード節**と呼ぶ
+ガード節の良くあるパターンは後述
+```typescript
+function getFormattedValue(value: null | number) {
+  if (value === null) return value // value: nullと推論される
+  return `${value.toFixed(1)} pt` // value: numberと推論される
+}
+```
+
+引数の型にundefinedは含まれていないが、「?(オプショナル型)」を付与することで
+TypeScriptが自動で引数のundefinedを考慮しれくれる
+```typescript
+function greet(name?: string) { // TypeScriptは function greet(name: string | undefined) と解釈している
+  return `Hello ${name.toLowerCase()}`
+}
+```
+これの何が嬉しいかというと実行エラーが事前に気づける(nameがundefinedの場合、toLowerCaseが呼べないのでコケる)
+実際にこのコードをVSCodeで記述すると、nameがundefinedである可能性を指摘してくれる
+つまり、型のみ論理的にチェックをすることで事前にバグを検知できる
+Guard節により型の絞り込みをおこなうことで対処できる
+```typescript
+function greet(name?: string) {
+  if (name === undefined) return 'Hello'
+  return `Hello ${name.toLowerCase()}`
+}
+```
+
+デフォルト引数を利用した場合は少し興味深い挙動をする
+```typescript
+function getFormattedValue(value: number, unit = 'pt') {
+  return `${value.toFixed(1)} ${unit.toLowerCase()}`
+}
+```
+
+VScodeで関数の推論された型をみると
+
+> function getFormattedValue(value: string, unit?: string): string
+
+とunitはundefinedの可能性を推論している
+undefinedと推論した場合、関数内部のtoLowerCaseが実行できない可能性を考慮してエラーを検知してくれるかと思いきやエラーにならない(greet関数の例)
+理由は単純でデフォルト値があるから(はundefinedにならないことを保証している)
+もちろん、
+
+> getFormattedValue(100, 0)
+
+だとunitの型が違うためエラーとして検知される
+
+
+オブジェクトの型安全についてはWeak Typeというものがある
+定義としてはすべてのプロパティがオプショナルな型なもの
+一つでも一致していれば意図したものだと判断してくれる
+```typescript
+type User = {
+  name?: string
+  age?: number
+}
+function register(user: User) {}
+
+const maybeUser = {
+  age: 1,
+  gender: 'male'
+}
+register(maybeUser) // 1つでも一致していればエラーでない
+
+const notUser = {
+  gender: 'male',
+  graduate: 'Tokyo'
+}
+register(notUser) // Error
+```
+
+一方で、オブジェクトリテラルを直接引数に入れるとエラーになる
+**Excess Property Checks(過剰なプロパティチェック)** と呼ばれるもの
+オブジェクトリテラルを直接利用することは実際の開発現場で良くあり(設定値を渡すシーンなど)、存在しないプロパティに対して過剰に検査をするようになっている
+```typescript
+register({
+  age: 1,
+  name: 'Hoge',
+  gender: 'male'
+})
+```
+
+readonlyの使い方は2つ
+1つはreadonlyシグネチャを利用する
+```typescript
+type State = {
+  readonly id: number
+  name: string
+}
+const state: State = {
+  id: 1,
+  name: `hoge`
+}
+state.id = 2 // Error
+```
+もう1つはReadonly型を適用する
+```typescript
+type State = {
+  id: number
+  name: string
+}
+const state: Readonly<State> = {
+  id: 1,
+  name: `hoge`
+}
+state.id = 2 // Error
+```
+Readonly型はすべてのプロパティに一括でreadonlyシグネチャを付けているのと同じ
+しかし、悲しいかなJavaScriptの振る舞いとしては実際には値が書き換わってしまう
+あくまでTypeScript上で安全を得ることができるものである
+
+JavaScript側で書き換わるのを制御したいという場合はObject.freezeを使えば良い
+```typescript
+type State = {
+  id: number
+  name: string
+}
+const state: State = {
+  id: 1,
+  name: `hoge`
+}
+const frozenState = Object.freeze(state) // VScode上ではReadonly<State>として推論されている
+frozenState.id = 2
+```
+
+### 抽象度による型安全
+
+TBD
+
+### 良くあるガードパターン
+
+typeof演算子
+```typescript
+function reset(value: number | string) {
+  const v0 = value // const v0: number | string
+  if (typeof value === 'number') {
+    // ここの段階でvalueはnumberのみと推論される
+    const v1 = value // v1: number
+    return 0
+  }
+  const v2 = value // v2: string
+  return ''
+}
+```
+プロパティをin演算子で比較すると型が絞り込まれる
+```typescript
+function judgeUser(user: UserA | UserB) {
+  if ('gender' in user) {
+    const u0 = user // UserA | UserB
+  }
+  if ('name' in user) {
+    const u1 = user // UserA
+  }
+  if ('age' in user) {
+    const u2 = user // UserB
+  }
+}
+```
+instanceof演算子はtypeofと同じで違いはクラスに対しての話
+```typescript
+class Creature {
+  breathe() {}
+}
+class Animal extends Creature {
+  shakeTail() {}
+}
+class Human extends Creature {
+  greet() {}
+}
+
+function action(creature: Creature | Animal | Human) {
+  if (creature instanceof Creature) {
+    const c1 = creature // Creature | Animal | Human
+  }
+  if (creature instanceof Animal) {
+    const c2 = creature // Animal
+  }
+  if (creature instanceof Human) {
+    const c3 = creature // Human
+  }
+}
+```
+タグ付きUnion Types
+switch文によって型の絞り込みができる
+しかし、条件があり、比較されるオブジェクトは共通するプロパティを持っていること
+また、その型はリテラルタイプであること
+```typescript
+function judgeUserType(user: UserA | UserB) {
+  switch(user.gender) {
+    case 'male':
+      const u0 = user // UserA
+      return u0
+    case 'female':
+      const u1 = user // UserB
+      return u1
+    default:
+      const u2 = user // never defaultブロックに到達するこてゃないため
+      return u2
+  }
+}
+```
+
+### TypeScriptがプログラマーを信用して型を推論しているパターン
+
+getUserTypeでは引数anyに対してユーザーが定義した型を推論されている
+その中核にあるのは関数の戻り値に **引数 is Type** と記述しbooleanを返している関数
+これを **ユーザー定義 guard types** という
+ここのポイントはTypeScriptがプログラマーを信用して型を推論していること
+
+```typescript
+type User = { gender: string; [k: string]: any }
+type UserA = User & { name: 'hoge' }
+type UserB = User & { age: 1 }
+
+function isUserA(user: UserA | UserB): user is UserA {
+  return user.name !== undefined
+}
+
+function isUserB(user: UserA | UserB): user is UserB {
+  return user.age !== undefined
+}
+
+function getUserType(user: any) {
+  const u0 = user // any
+  if (isUserA(user)) {
+    const u1 = user // UserA
+    return 'A'
+  }
+  if (isUserB(user)) {
+    const u2 = user // UserB
+    return 'B'
+  }
+  return 'unkown'
+}
+
+const x = getUserType({name: 'aaa'}) // 'A' | 'B' | 'unkown'
+```
+
+### よく利用するfilterは型を絞り込むことができないけどユーザー定義ガード節を利用することで可能になる
+
+```typescript
+type User = { name: string }
+type UserA = User & { gender: 'male' | 'female' | 'other'}
+type UserB = User & { graduate: string }
+
+const users: (UserA | UserB)[] = [
+  {name: 'Taro', gender: 'male'},
+  {name: 'Hanako', graduate: 'Tokyo'},
+]
+
+const filteredUsers = users.filter(user => 'generate' in user) // (UserA | UserB)[] と推論されてる
+```
+ここにユーザー定義ガード節を利用した関数を併用すると
+```typescript
+function filterUser(user: UserA | UserB): user is UserB {
+  return 'graduate' in user
+}
+
+const filteredUsers = users.filter(filterUser) // UserB[] と推論される
+
+// 匿名関数を使ってこうも書ける
+const filteredUsers = users.filter(
+  (user: UserA | UserB): user is UserB => 'graduate' in user
+)
+```
+
 ## 3章 TypeScriptの型推論
 
 - TypeScriptは変数に型を必ずしも付与する必要はない
