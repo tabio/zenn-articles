@@ -146,11 +146,168 @@ frozenState.id = 2
 
 ### 抽象度による型安全
 
-TBD
+ダウンキャストは抽象的な型から詳細な型を付与すること
+TypeScriptよりもプログラマーの方が型に詳しい時に用いる
+よってプログラマーは定義した型に責任を持つ必要がある
 
+```typescript
+const defaultTheme = {
+  backgroundColor: "orange" as "orange", // literal typesのorangeとして定義
+  borderColor: "red" // stringと推論
+}
+
+defaultTheme.backgroundColor = "blue" // Error
+defaultTheme.borderColor = "blue" // No Error
+```
+
+ちなみにダウンキャストは互換性のある型にしか適用できない
+"orange"のliteralをbooleanにキャストすることはできない
+
+```typescript
+const defaultTheme = {
+  backgroundColor: "orange" as false
+}
+```
+
+アップキャストは抽象度を上げる(詳細から抽象へ)
+抽象度を上げれば安全に聞こえるかもしれないが注意は必要
+例えば以下のanyにアップキャストしたことで実行時にしかエラーに気づけ無い
+
+```typescript
+const fiction: number = toNumber('1,000') // anyにアップキャストしたので実際にnumberを期待している変数に入れることができてしまう
+fiction.toFixed()  // Runtime Error発生する
+```
+
+インデックスシグネチャ **[k: string]** はオブジェクトに動的なプロパティを定義したいときに使う
+
+```typescript
+type User = {
+  name: string
+  [k: string]: any
+}
+const userA: User = {
+  name: 'Taro',
+  age: 1
+}
+const x = userA.age // anyとして推論
+```
+
+ただし、トップレベルのプロパティに互換性がない場合はコンパイルエラーを引き起こすの注意
+nameがstringでnumberと互換性ないと怒っている
+
+```typescript
+type User = {
+  name: string
+  [k: string]: number
+}
+
+↓Union Typesにすることで回避できる
+type User = {
+  name: string
+  [k: string]: number | string
+}
+```
+
+インデックスシグネチャを利用時に**値**に対して制限加えたい場合
+そんな場合は以下のような定義をすると良い
+
+```typescript
+type Nickname = 'hoge' | 'foo' | 'fuga'
+type User = {
+  [k: string]: Nickname
+}
+const userA: User = {
+  name: 'hoge'
+}
+const x = userA.name // Nickname型と推論される
+const y = userA.aaa // Nickname型として推論されて、aaaプロパティがないのにエラーにならない
+```
+
+↑の変数yはコードとしては危険なのでそれを防ぐためundefinedを追加しておくこと
+
+```typescript
+type User = {
+  [k: string]: Nickname | undefined
+}
+const y = userA.aaa // Nickname | undefinedとして推論されるので後続処理でガード入れることを教えることができる
+```
+
+インデックスシグネチャを利用時に**キー**に対して制限加えたい場合
+**inキーワード** を利用する
+
+```typescript
+type Properties = 'age' | 'hight'
+type User = {
+  [K in Properties]: number
+}
+const userA: User = {
+  age: 1,
+  hight: 170
+}
+
+const x = userA.age
+```
+
+constでも別の変数に入れたり、関数の戻りとして返した時は抽象化されてしまう
+そこで、const assertionというものがある
+readonlyを全体に付与してくれる
+別の変数にコピーされても型定義はそのまま
+
+```typescript
+const tuple1 = [1, '2', false] as const // readonly [1, '2', false]
+let tuple2 = tuple1
+
+const a = 'a'
+let b = a  // 通常は変数にコピーされると型が抽象化されてしまう(Widening Literary Types)
+```
+
+関数の場合は以下のようになる
+
+```typescript
+function increment() {
+  const res = { type: 'INCREMENT' }
+  return res
+}
+const x = increment() // { type: string }と抽象化されてしまう
+
+function increment2() {
+  const res = { type: 'INCREMENT' } as const
+  return res
+}
+const y = increment2() // { readonly type: 'INCREMENT' }
+```
+
+anyを乱発しないことの例
+この例からも分かるように型の緩い不要な戻り型はバグの温床になってしまう
+
+```typescript
+function greet(): any {
+  console.log('Hello')
+}
+const message = greet()
+console.log(message.toUpperCase()) // anyによって型エラーで検知できない
+```
+
+Non-null assersionはプログラマー都合で欺かれた定義であり、その場しのぎでしかない
+よって使うべきではない
+
+```typescript
+function greet(name?: string) {
+  console.log(`Hello ${name!.toUpperCase()}`) // nameがundefinedだとエラーだが型から検知できなくなる
+}
+```
+
+ほぼお目にかかる機会がないがアサーションを重複して付けることができる
+よほどのことがない限り利用はしないこと
+
+```typescript
+const myName = 0 as any as string
+console.log(myName.toUpperCase())  // 明らかにエラーでるけど型からエラーを検知できない
+```
 ### 良くあるガードパターン
 
 typeof演算子
+
 ```typescript
 function reset(value: number | string) {
   const v0 = value // const v0: number | string
@@ -163,7 +320,9 @@ function reset(value: number | string) {
   return ''
 }
 ```
+
 プロパティをin演算子で比較すると型が絞り込まれる
+
 ```typescript
 function judgeUser(user: UserA | UserB) {
   if ('gender' in user) {
@@ -177,7 +336,9 @@ function judgeUser(user: UserA | UserB) {
   }
 }
 ```
+
 instanceof演算子はtypeofと同じで違いはクラスに対しての話
+
 ```typescript
 class Creature {
   breathe() {}
@@ -201,10 +362,12 @@ function action(creature: Creature | Animal | Human) {
   }
 }
 ```
+
 タグ付きUnion Types
 switch文によって型の絞り込みができる
 しかし、条件があり、比較されるオブジェクトは共通するプロパティを持っていること
 また、その型はリテラルタイプであること
+
 ```typescript
 function judgeUserType(user: UserA | UserB) {
   switch(user.gender) {
@@ -271,7 +434,9 @@ const users: (UserA | UserB)[] = [
 
 const filteredUsers = users.filter(user => 'generate' in user) // (UserA | UserB)[] と推論されてる
 ```
+
 ここにユーザー定義ガード節を利用した関数を併用すると
+
 ```typescript
 function filterUser(user: UserA | UserB): user is UserB {
   return 'graduate' in user
