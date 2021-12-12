@@ -10,6 +10,181 @@ published: true
 
 [実践TypeScript](https://www.amazon.co.jp/-/jp/dp/483996937X/)を読んでの備忘録
 
+## 5章 TypeScriptの型システム
+
+この章は型の互換性について説明されている
+型には互換性がある
+例えば、値側で推測された型と変数側に定義されている型に互換性がないので代入ができないといったケースがありえる
+
+### string型とString Literal Types
+
+詳細な型(String Literal Types)に抽象な型(String型)を代入できない
+number型とNumber Literal Typesの関係も同じ
+
+```typescript
+// Errorがでない場合
+let s1: 'test' = 'test'
+let s2: string = s1
+
+// Errorが出る場合
+let s1: string = 'test'
+let s2: 'test' = s1
+```
+
+### any型は何にでもなれるので不適切な型を代入できてしまう危険なもの
+
+```typescript
+let a1: any = false
+let a2: string = a1 // booleanなのstringに代入しようとしているがエラーにならない
+```
+### unknownは as で型を決めるまで別の方を代入できない
+
+```typescript
+let u1: unknown = 'test'
+let u2: string = unknown // Error
+let u3: number = u1 as number // u1の型が決まるので代入できるようになる
+```
+### asにも互換性がある
+
+値と互換性のないアサーションは定義できない
+
+```typescript
+let s1 = 0 as string // Error
+```
+
+### **{}型(オブジェクトリテラル)** は特殊
+object型として定義した場合は理解しやすいが、{}型にすると理解が難しくなる
+
+
+```typescript
+let o1: {} = 0 // OK
+let o2: {} = '0' // OK
+let o3: {} = false // OK
+let o4: {} = {} // OK
+
+let o1: object = 0 // Error
+let o2: object = '0' // Error
+let o3: object = false // Error
+let o4: object = {} // OK
+```
+
+{}型の中身の理解をするのにkeyofでオブジェクトのプロパティ一覧を取得してみれば良い
+K2, K3, K4はプロパティを持っていることがわかる。代入できるということは、プリミティブ型は{}のサブタイプと言える。
+
+```typescript
+type K0 = keyof {} // never
+type K1 = keyof { K: 'K'} // 'K'
+type K2 = keyof 0 // "toString" | "toFixed" ...
+type K3 = keyof '1' // "charAt" | "toString" ...
+type K4 = keyof false // "valueOf"
+```
+
+{}型の代入は特定のプロパティが異なるとエラー、また、互いに一致するプロパティがないとエラー
+
+```typescript
+let p1 = {p1: 'test'}
+let p2 = {p1: 1}
+p1 = p2 // Error
+
+let p3 = {p3: 'test'}
+let p4 = {p4: 'test'}
+p3 = p4 // Error
+```
+
+部分的にプロパティが一致している場合は代入する方向によってはOK
+
+```typescript
+let p3 = {p3: 'test'}
+let p4 = {p3: 'test', p4: 'test'}
+p3 = p4
+```
+
+### 関数にも互換性がある
+
+引数に互換性がない場合はエラー
+
+```typescript
+let fn1 = (a: string) => {}
+let fn2 = (a: number) => {}
+fn1 = fn2 // Error
+```
+
+引数に部分的に一致している場合は引数が多い方へ代入が可能
+
+```typescript
+let fn1 = (a: string) => {}
+let fn2 = (b: string, c: number) => {}
+fn2 = fn1
+```
+
+### クラスにも互換性
+
+クラスメンバーが比較対象になる
+コンストラクターの引数型は関係ない
+
+```typescript
+class Animal {
+  feat: number
+  constructor(name: string) {}
+}
+
+class Human {
+  feat: number
+  hands: number
+  constructor(name: string, gender: number) {}
+}
+
+let animal: Animal = new Animal(`dog`)
+let human: Human = new Human(`taro`, 2)
+animal = human
+```
+
+### 宣言空間
+
+TypeScriptにはValue、型、名前空間の3つの宣言空間が存在している
+それぞれの空間内で宣言名は重複できない
+
+#### Value宣言空間
+
+値に対して割り当てられる
+
+```typescript
+const greet = 'test'
+function greet() = {} // 同じ認識子であるgreetを定義できないとError
+```
+
+#### Type宣言空間
+
+Typeを宣言する方法は2つ（interface or type alias）で違いはOpen endedへの準拠（後付できるか）
+この違いを抑えておく
+type aliasの場合は宣言の重複エラーが発生する
+interfaceよりもtype aliasが推奨される理由はOpen endedによって予期せぬ不具合を防ぐためか
+
+```typescript
+// interfaceの場合
+interface User {
+  name: string
+}
+interface User {
+  age: number
+}
+↓定義が上書きされて結合
+interface User {
+  name: string
+  age: number
+}
+
+// type aliasの場合
+type User = {
+  name: string
+}
+type User = {
+  age: number
+}
+```
+
+
+
 ## 4章 TypeScriptの型安全
 
 どの言語でもそうだけど如何にバグを生まないようにするかは重要
