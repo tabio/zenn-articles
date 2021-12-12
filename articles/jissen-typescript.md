@@ -8,7 +8,121 @@ published: true
 
 ## 概要
 
-[実践TypeScript](https://www.amazon.co.jp/-/jp/dp/483996937X/)を読んでの備忘録
+[実践TypeScript](https://www.amazon.co.jp/-/jp/dp/483996937X/)を読んでの写経
+
+## 6章 TypeScriptの高度な型
+
+TypeScriptでは、型で型を定義することが可能(型プログラミング)
+
+### 変数に対するGenerics
+
+型における変数のようなもの
+型を可変にすることで柔軟な型定義を書ける
+
+Genericsを利用する型を宣言するときの慣習として、**T**、**U**、**K**の名称を利用する
+**<T>** はT型エイリアスと呼ぶ
+
+```typescript
+interface Box<T = string> { // 関数のデフォルト引数と同じように初期型を定義できる
+  value: T
+}
+const box0: Box = {value: 'test'}
+const box1: Box<string> = {value: 'test'}
+const box2: Box<number> = {value: 1}
+const box3: Box<number> = {value: 'test'} // Error
+```
+
+一方で、型を絞りたい場合もある
+その場合は**extends**による制約を追加すればよい
+
+```typescript
+interface Box<T extends string | number> {
+  value: T
+}
+const box1: Box<string> = {value: 'test'}
+const box2: Box<number> = {value: 1}
+const box3: Box<number> = {value: false} // Error
+```
+
+### 関数の引数に対してGenericsを利用する場合
+
+```typescript
+function boxed<T>(props: T) {
+  return {value: props}
+}
+boxed(1)
+```
+
+引数をnullableにしたい場合は宣言時にasを付与
+
+```typescript
+const box = boxed(false as boolean | null)
+const box2 = boxed<string | null>(null)
+```
+
+変数の時と同じようにextendsで制約を追加できる
+
+```typescript
+function boxed<T extends string>(props: T) {
+  return {value: props}
+}
+const box = boxed(0) // Error
+const box2 = boxed('test')
+```
+
+引数の型が明示されていることで関数内部の安全性も上がる
+
+```typescript
+interface Props {
+  amount: number
+}
+function boxed<T extends Props>(props: T) {
+  return {value: props.amount.toFixed} // amountがnumberなのでtoFixedが呼べる
+}
+const box = boxed({amount: 19})
+```
+
+### 複数のGenericsが出てくる場合
+
+
+```typescript
+function pick<T, K extends keyof T>(props: T, key: K) {
+  return props[key] // propsはオブジェクトを想定していて、必ず存在するプロパティ名が保証される
+}
+const obj = {
+  name: 'Taro',
+  amout: 0
+}
+pick(obj, 'name')
+pick(obj, 'name1') // プロパティがないのでError
+```
+
+### ClassのGenerics
+
+クラスにGenericsを利用することでコンストラクタの引数に制約を付与できる
+
+```typescript
+class Person<T extends string>{
+  name: T
+  constructor(name: T) {
+    this.name = name
+  }
+}
+const person = new Person('test')
+
+// クラスメンバーにIndexed　Access Typesを利用した例
+class Person<T extends PersonProps>{
+  name: T['name']
+  age: T['age']
+  constructor(props: T) {
+    this.name = props.name
+    this.age = props.age
+  }
+}
+const person = new Person({name: 'test', age: 1})
+```
+
+
 
 ## 5章 TypeScriptの型システム
 
@@ -182,8 +296,6 @@ type User = {
   age: number
 }
 ```
-
-
 
 ## 4章 TypeScriptの型安全
 
