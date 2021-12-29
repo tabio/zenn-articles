@@ -3,7 +3,7 @@ title: "プロフェッショナルWebプログラミングJavaScript"
 emoji: "🍲"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["javascript"]
-published: false
+published: true
 ---
 
 ## はじめに
