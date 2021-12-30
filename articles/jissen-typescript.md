@@ -181,9 +181,128 @@ type DeepDive<T> = {
 type X = DeepDive<Properties> // X = string
 ```
 
+inferも型を抽出できる機能を持つ
+Conditional Types（IF文）の中で利用する
+なにはともあれ例を見ながら読み解く
+greet関数に一致したらそのgreet関数が返す型を返す
+
+```ts
+function greet() {
+  return 'String型が返るよ'
+}
+
+type Return<T> = T extends (...args: any[]) => infer U ? U : never
+type R = Return<typeof greet> // type R = string
+```
+
+`(...args: any[]) => infer U` の部分がConditional Typesに該当する
+(..args: any[])は引数を取る関数で、アロー演算子でU型という戻り型を返していると解釈
+つまり、Tが関数型と互換があれば、その関数の戻り型を返すというIF文
+結果、type Rにはstringが入ってくる
+
+Conditional Typesの中であればinferはどこでも利用できる
+以下のサンプルでは戻り型ではなく、引数として利用している
+
+```ts
+function greet(name: string, age: number) {
+  return 'Hello ${name} ${kana}'
+}
+
+type A1<T> = T extends (..args: [infer U, ...any[]]) => any ? U : never // 第一引数の型を抽出
+type X = A1<typeof greet> // type X = string
+
+type A2<T> = T extends (..args: [any, infer U, ...any[]]) => any ? U : never // 第一引数の型を抽出
+type Y = A2<typeof greet> // type Y = number
+```
+
 ### Utility Typesについて
 
 車輪の発明をしないようによくあるパターンは組み込み型として定義されている
+（いちいち上述したConditional Typesで独自の定義をしなくて済むようにしている）
+
+#### 従来の組み込みUtility Types
+
+```ts
+interface User = {
+  name: string
+  age?: number | undefined
+}
+```
+
+- Readonly型：Readonlyを強制
+  ```ts
+  type Hoge = Readonly<User>
+  {
+    readonly name: string
+    readonly age?: number | undefined
+  }
+  ```
+- Partial型：Optionalを強制
+  ```ts
+  type Hoge = Partial<User>
+  {
+    name?: string | undefined
+    age?: number | undefined
+  }
+  ```
+- Required型：Optionalを排除
+  ```ts
+  type Hoge = Partial<User>
+  {
+    name: string
+    age: number
+  }
+  ```
+- Record型：新しいObjectを作る。ただし第一引数がキーになって、第2引数が型
+  ```ts
+  type Hoge = Record<'user', User>
+  {
+    user: User
+  }
+  ```
+- Pick型：型の抽出。第一引数が対象の型、第2引数がそのプロパティ
+  ```ts
+  type Hoge = Pick<User, 'name'>
+  {
+    name: string
+  }
+  ```
+- Omit型：型の除外。第一引数が対象の型、第2引数がそのプロパティ
+  ```ts
+  type Hoge = Pick<User, 'name'>
+  {
+    age?: number | undefined
+  }
+  ```
+
+#### 新しい組み込みUtility Types
+
+- Exclude型：T型の中からUと互換性がある型を`除き`、新しい型を生成
+  ```ts
+  type X = Exclude<"a" | "b"> // "a"が抽出（"b"はstringで、"a"と互換性があるので"a"を除外して新しい型として生成）
+  ```
+- Extract型：T型の中からUと互換性がある型を`残し`、新しい型を生成
+  ```ts
+  type X = Extract<"a" | "b"> // "b"が抽出（"b"はstringで、"a"と互換性があるので"a"を残して、"b"を抽出して新しい型として生成）
+  ```
+- NonNullable型：T型の中からnullとundefinedを除外した新しい型を生成
+  ```ts
+  type X = Nonnullable<string | null | undefined> // string
+  ```
+- ReturnType型：T型は関数であること。関数ではない場合はコンパイルエラー。そしてその関数の戻り値の型を返す
+  ```ts
+  type X = ReturnType<() => string> // string
+  type Y = ReturnType<string> // Error
+  ```
+- InstanceType型：コンストラクター関数型のインスタンス型を取得
+  ```ts
+  class C {
+    a = 0
+    b = 0
+  }
+  type X = InstanceType<typeof C>
+  const n = {} as X // { a: number, b: number }
+  ```
 
 ## 5章 TypeScriptの型システム
 
