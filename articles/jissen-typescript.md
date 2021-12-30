@@ -84,7 +84,6 @@ const box = boxed({amount: 19})
 
 ### 複数のGenericsが出てくる場合
 
-
 ```typescript
 function pick<T, K extends keyof T>(props: T, key: K) {
   return props[key] // propsはオブジェクトを想定していて、必ず存在するプロパティ名が保証される
@@ -122,7 +121,69 @@ class Person<T extends PersonProps>{
 const person = new Person({name: 'test', age: 1})
 ```
 
+### 型を抽出したい場合について
 
+対象の型から特定の型を抽出したい場合について理解するためには、型の定義にもIF文(Conditional Types)が適用できることを知っておく必要がある
+部分型として型抽出するinferというシグネチャはCondtional Types内で利用するため
+
+以下は**if T は X と互換性のある型であれば ? Y : Z** と読み替えるとわかりやすい
+
+```ts
+T extents X ? Y : Z
+```
+
+条件に合致した型を抽出する例
+Pick型という組み込みUtility Typesを使うのが一番手っ取り早い
+
+```ts
+interface User {
+  name: string
+  kana: string
+  gender: 'male' | 'female' | 'other'
+}
+
+type UserGender = Pick<User, 'gender'>
+// UserGender = { gender: 'male' | 'female' | 'other' }
+```
+
+キーの名称だと抽出するのは簡単だけどもう少し抽象化して、stringの型のものを抽出したいとなったら
+その場合は以下のように独自で定義したFilter型のようなものを作ってやる
+
+```ts
+type Filter<T, U> = {
+  [K in keyof T]: T[K] extends U ? K : never // T[K]と互換性のある型Uと一致する場合はK型を返すのがポイント
+}[keyof T] // 内部でK型を返しているので末尾は[keyof T]となる
+
+type stringKeys = Filter<User, string> // 'name' | 'kana' というUnion Typeが抽出できる
+```
+
+これをPick型と組み合わせて使うとstringに一致するものを抽出できる
+
+```ts
+type strings = Pick<User, stringKeys>
+```
+
+これまでは直下の階層の型の抽出だったが、ネストした階層の型を抽出したい場合の例
+
+```ts
+interface DeepNest {
+  deep: { nest: { value: string } }
+}
+
+interface Properties {
+  deep: DeepNest
+}
+
+type Salvage<T extends DeepNest> = T['deep']['nest']['value'] // extends DeepNestがあるのでIndexed Access表記が使える
+type DeepDive<T> = {
+  [K in keyof T]: T[K] extends DeepNest ? Salvage<T[K]> : never
+}[keyof T]
+type X = DeepDive<Properties> // X = string
+```
+
+### Utility Typesについて
+
+車輪の発明をしないようによくあるパターンは組み込み型として定義されている
 
 ## 5章 TypeScriptの型システム
 
