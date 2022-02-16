@@ -1,5 +1,5 @@
 ---
-title: ""
+title: "検討中"
 emoji: "🦁"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: []
