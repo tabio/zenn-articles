@@ -3,7 +3,7 @@ title: "Team Topologies の輪読会用の備忘録"
 emoji: "🍚"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["チーム設計", "輪読会", "TeamTopologies"]
-published: false
+published: true
 ---
 
 # はじめに
