@@ -89,3 +89,57 @@ class HitAndBlow {
   tryCount= 0
 }
 ```
+
+### never型の使いみち
+
+never型のどんな値も入れられないという特性を持つ
+型を使ったコードの安全性を向上させれる
+
+```ts
+// neverにはどんな値も入れられない
+let neverVal: never;
+neverVal = 'aaaa'
+
+//  Type 'string' is not assignable to type 'never'.
+```
+
+Modeはnormalとhardしか理論的に来ないからswitch文のdefault値はなくても動く
+将来的にModeに`ultra`が追加された場合、これだとdefaultに入ってくることになる
+実際はcaseでultraを追加することになるのでその気づきを得たい
+```ts
+class Hoge {
+  Mode: 'normal' | 'hard';
+
+  fuga(mode: Mode) {
+    switch(mode) {
+      case "normal":
+        return 3;
+      case "hard":
+        return 4;
+      default:
+        throw new Error(`${this.mode}は無効なモードです`); // ここのthis.modeの型はstring literalの`ultra`になっているのがポイント
+    }
+  }
+}
+```
+
+never型の変数に値を代入させるロジックにしておくことで気づける
+コンパイルが通らずエラー箇所を見るとcase文に追加するの忘れてたねということになる
+つまり、never型を上手く利用することによって開発時の安全性が増しますよ
+
+```ts
+class Hoge {
+  Mode: 'normal' | 'hard';
+
+  fuga(mode: Mode) {
+    switch(mode) {
+      case "normal":
+        return 3;
+      case "hard":
+        return 4;
+      default:
+        const neverValue: never = this.mode; // string literalのultraをnever型に代入しようとする。never型はどんな値も入れることができない
+        throw new Error(`${neverValue}は無効なモードです`);
+    }
+  }
+}
