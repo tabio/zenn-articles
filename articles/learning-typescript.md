@@ -247,7 +247,7 @@ const modes = ['normal' , 'hard'] as const
 typeof modes // タプル型として抽出できる ['normal' , 'hard']
 ```
 
-最終的にはパイプで型を表現したい
+最終的にはユニオン型を表現したい
 配列やタプルの型を取り出す方法はインデックス番号を指定してあげれば良い
 しかし、今回は全要素が対象なので、そんなときのための便利なnumberキーワードを使う
 
@@ -255,3 +255,65 @@ typeof modes // タプル型として抽出できる ['normal' , 'hard']
 const modes = ['normal' , 'hard'] as const
 typeof modes[number] // modes[0]だと'normal'というstring literal型が抽出される
 ```
+
+### constructorの省略形
+
+```ts
+class Person {
+  readonly name: string;
+  constructor(name: string) {
+    this.name = name;
+  }
+}
+const person = new Person('hoge');
+```
+
+と　
+
+```ts
+class Person {
+  constructor(private name: string) {} // 引数にはprivate, public, readonlyなどの修飾子がないと自動でプロパティとしてセットしてくれないのがポイント
+}
+const person = new Person('hoge');
+```
+
+は同じ
+
+### インデックスシグネチャ
+
+```ts
+type GameStore = {
+  'hit and blow': HitAndBlow,
+  'janken': Janken
+}
+```
+新しい要素追加の際にキーと値を追加するのではなく、値の追加だけで対応したいという要望に
+キーの汎化であるインデックスシグネチャが使える
+```ts
+type GameStore = {
+  [key: string]: HitAndBlow | Janken
+}
+```
+インデックスシグネチャを使うことでスッキリした表現になる
+一方で、キーが何でも入ってしまうので型による安全性は下がる
+そこでMapped Typesによるキーの制限を入れると良い
+
+### Mapped Typesによるキーの制限
+
+JavaScriptで配列をmapするとコールバックの第一引数でそれぞれの値を取れるのと同じような仕組み
+
+```ts
+type Member = 'John' | 'Anna'
+type Band = {
+  [key in Member]: { part: string }
+}
+```
+
+一般化するとこんな感じ
+
+> { [K in T]: U }
+
+Tはユニオンが入ってくる(文字列 or 数字の)
+KはTの中の1つの型
+Uはオブジェクトにした際の型
+
