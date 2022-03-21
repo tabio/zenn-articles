@@ -92,7 +92,8 @@ class HitAndBlow {
 
 ### never型の使いみち
 
-never型のどんな値も入れられないという特性を持つ
+never型のどんな型も入れられないという特性を持つ
+何が嬉しいかというとコンパイル前にエラーを検知できる
 型を使ったコードの安全性を向上させれる
 
 ```ts
@@ -105,7 +106,9 @@ neverVal = 'aaaa'
 
 Modeはnormalとhardしか理論的に来ないからswitch文のdefault値はなくても動く
 将来的にModeに`ultra`が追加された場合、これだとdefaultに入ってくることになる
-実際はcaseでultraを追加することになるのでその気づきを得たい
+`問題は、コンパイル後に初めてErrorが発生してcaseの分岐が足りなかったと気づくこと`
+コンパイル前にcase分岐追加を気づくことはできないか？
+
 ```ts
 class Hoge {
   Mode: 'normal' | 'hard';
@@ -138,8 +141,117 @@ class Hoge {
       case "hard":
         return 4;
       default:
-        const neverValue: never = this.mode; // string literalのultraをnever型に代入しようとする。never型はどんな値も入れることができない
+        const neverValue: never = this.mode; // string literalのultraをnever型に代入しようとする。never型はnever型以外のどんな値も入れることができない
         throw new Error(`${neverValue}は無効なモードです`);
     }
   }
 }
+
+### TypeとInterface
+
+- チーム内でルールを作ってどちらを使うかを決めておく
+- Typeは必ず先頭で宣言しておく
+- 合併の記述が異なる
+  ```ts
+  // Type
+  type Hoge = { name: string }
+  type Fuga = { age: number }
+  type Human = Hoge & Fuga
+
+  // Interface
+  interface Hoge = { name: string }
+  interface Fuga = { age: number }
+  interface Human extends  Hoge, Fuga {}
+  ```
+- Interfaceは同じ名前の定義があったら自動でマージする(declaration merging)ので意図しない型にならないように注意
+  ```ts
+  interface Person {
+    name: string
+    age: number
+  }
+
+  interface Person {
+    height: number
+  }
+
+  const person: Person = {
+    name: 'hoge',
+    age: 20
+  }
+  // heightが無いというエラーが表示される
+  ```
+
+### 型アサーション(as)
+
+- 型アサーションはTypeScriptの型推論を開発者側で上書きできる
+- TypeScriptの型チェックの恩恵から外れることになるので多用はさけるべき
+- 型キャストと別物であることに注意
+  - 型キャストは値そのものを変えてしまうのでランタイムに影響する
+  - 型アサーションはあくまでコンパイル時の型解決に影響を与えるものでランタイムには影響しない
+    - 故にランタイム後の入力値によってエラーが発生する隙きを生んでしまう可能がある
+
+### ジェネリクス
+
+引数にstringかnumber型を使うことができてその値を返す関数を書く場合
+
+```ts
+const returnVal = (value: string | number) => {
+  return value;
+}
+const personName = returnVal('hoge');
+const age = returnVal(20);
+```
+
+という風に書けるが、引数の型のバリエーションが増えいくと結構辛い
+そこでジェネリクスという動的に型を付与する書き方がある
+
+```ts
+const returnValue = <T>(value: T) => {
+  return value;
+}
+const personName2 = returnValue<string>('hoge');
+const age2 = returnValue<number>(20);
+const personName3 = returnValue('hoge'); // stringの部分は型推論が効くので省略可
+```
+
+Tの部分は何でも良いHogeHogeでも問題ない
+慣習的に`T`,`S`,`U`が使われることが多い
+
+### Stringの配列から型を抽出
+
+```ts
+const modes = ['normal' , 'hard']
+```
+から
+```ts
+type Mode = 'normal' | 'hard'
+```
+を作ることができる
+方法としては
+- `typeof`で型を抽出する
+- `as const`でstring literalのまま抽出
+- タプル型の要素を抽出できるようにnumberを使う
+で結果としては以下のようになる
+```ts
+const modes = ['normal' , 'hard'] as const
+type Mode = typeof modes[number]
+```
+
+```ts
+typeof modes // typeofだけだとstring[]として抽出されてしまう
+```
+
+そこで`as const`を付けることでstring literalとして抽出できる
+```ts
+const modes = ['normal' , 'hard'] as const
+typeof modes // タプル型として抽出できる ['normal' , 'hard']
+```
+
+最終的にはパイプで型を表現したい
+配列やタプルの型を取り出す方法はインデックス番号を指定してあげれば良い
+しかし、今回は全要素が対象なので、そんなときのための便利なnumberキーワードを使う
+
+```ts
+const modes = ['normal' , 'hard'] as const
+typeof modes[number] // modes[0]だと'normal'というstring literal型が抽出される
+```
