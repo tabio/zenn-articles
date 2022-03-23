@@ -1,6 +1,6 @@
 ---
 title: "手を動かして学ぶTypeScriptの備忘録"
-emoji: "😎"
+emoji: "🍍"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["TypeScript", "Nodejs"]
 published: false
@@ -317,3 +317,114 @@ Tはユニオンが入ってくる(文字列 or 数字の)
 KはTの中の1つの型
 Uはオブジェクトにした際の型
 
+
+## 4章
+
+### グローバルの名前空間で変数宣言すると型情報は参照できてしまう罠
+
+そのため別の変数と名前が競合する場合衝突してしまう
+
+getHoby.ts上ではexportしてないただの定数だが
+
+```ts:getHoby.ts
+const getHoby = () => 'game';
+```
+
+同じ階層のindex.tsから参照できる
+
+```ts:index.ts
+const hoby = getHoby();
+```
+
+しかし、型の参照ができているだけで実際の関数を参照している訳でない
+そのためビルド後に実行するとロジックの中身がないとエラーが発生する
+
+> ReferenceError: getHoby is not defined
+
+ではどうしたら良いかでいうとexport, importを使う
+
+```ts:getHoby.ts
+export const getHoby = () => 'game';
+```
+
+```ts:index.ts
+import { getHoby } from './getHoby';
+const hoby = getHoby();
+```
+
+exportが何をしているかというと`ローカルスコープ内`に閉じ込める役割を担っている
+（先程はexportを付けないことでグローバル空間に変数宣言していたた）
+
+index.ts側でgetHobyを参照したい場合はimportを使う
+これによりコンパイル後にちゃんとgetHobyをファイルから読み込んで参照できる形にしてくれる
+
+このexportとimportの仕組みは`ファイルモジュール`と呼ばれている
+
+### export defaultの罠
+
+基本使わない
+1. importで呼び出す時に名前を勝手に変えることができる
+  そのため別ファイルで名前が衝突することがある
+2. エディタとの相性良くない
+  vscodeで変数名を記述することでimportを補完してくれる機能が働かない
+
+### モジュールシステムの歴史
+
+- サーバーサイド(Node.js)のJSモジュール
+  - CommonJS
+    - サーバーサイドJSの仕様のこと
+    - CommonJSの仕様に沿ったJSのサンプルコードは
+      ```js:sum.js
+      module.export = function(a,b) {
+        return a + b
+      }
+      ```
+      ```js:index.js
+      const sum = require('./sum.js');
+      console.log(sum(1,2));
+      ```
+- ブラウザ環境でのJSモジュール
+  - AMD(Asynchronous module definition)
+    - ブラウザ上でもモジュールを非同期でロードする仕様も広まっていった
+      ```js
+      define(function() {
+        return function sum(a, b) {
+          return a + b
+        }
+      })
+      ```
+      ```js
+      define(['sum'], function(sum) {
+        console.log(sum(1, 2))
+      })
+      ```
+- ブラウザ環境での実行できるようにビルドするためのツール
+  - Browserify
+    - CommonJS形式のJSの依存関係を解決して1つのファイルにまとめて出力してくれる
+  - RequireJS
+    - Browserifyと違い事前にビルドして依存関係を解決する訳でない
+    - ランタイム上で非同期に依存関係を解決する
+
+Node.jsではCommonJS形式で、ブラウザではBrowserifyやRequireJSでと開発者が大変な時代があった
+
+その後2015にECMAScript Modules(ESModules)に統一する動きがでた
+ESModulesのサンプルはTypeScriptの書き方のそれ
+```js
+export function sum(a,b) {
+  return a + b
+}
+```
+```js
+import { sum } from './sum.js';
+console.log(sum(1,2));
+```
+
+しかし、正式なモジュール仕様が定められたけど、ブラウザの種類によっては対応してないものもあるのが現状
+具体的にはIEはESModules未対応(Chrome, Firefox, Edgeなどは対応済み)
+
+ブラウザによってはまちまちな状況に対してWebpackというモジュールバンドラーが出てきた
+CommonJSだろうとESModulesだろうと、すべての形式をブラウザで動く形に変換してくれるという優れもの
+
+Node.jsもESModules対応されているけど、CommonJS形式のモジュールはまだ多く残っているのが現状
+
+ESModulesも良いところばかりではない、importが深くネストしていると、ラウンドドリップタイムが長くなってしまう
