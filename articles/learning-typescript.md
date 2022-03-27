@@ -428,3 +428,57 @@ CommonJSだろうとESModulesだろうと、すべての形式をブラウザで
 Node.jsもESModules対応されているけど、CommonJS形式のモジュールはまだ多く残っているのが現状
 
 ESModulesも良いところばかりではない、importが深くネストしていると、ラウンドドリップタイムが長くなってしまう
+
+### 型定義ファイル(DefinitelyTyped)が必要かどうかの確認方法
+
+npmのサイトでパッケージを検索し`DT`のマークがあれば、`@types/ライブラリ名`
+
+node_modules/@types/ライブラリ名
+
+でインストールされる
+型情報は`index.d.ts`に記載されている
+
+![](/images/learning-typescript/definitely-typed.png =300x)
+
+アプリケーションコード上でimportすると、そのライブラリのindex.d.tsを参照してくれるという
+
+一方で、@types/ライブラリ名は別の人が作成しているので、`最新の型情報に追従している保証がない`ことに注意
+
+
+### DefinitelyTypedがない場合は自分で作るしかない
+
+ts/@types/uuid/index.d.ts
+
+```ts
+declare module 'uuid' {
+  namespace uuid {
+    function v4(): string
+  }
+  export = uuid
+}
+```
+
+細かい型定義は省略。declareでライブラリの型定義ができることだけ覚えておく
+
+### enumを使うべきでない理由
+
+- TypeScriptのコンセプトに合ってない
+  TypeScriptはコンパイルするとJavaScriptになる
+  コンパイル後は型定義は全て削除される
+  つまり、TypeScriptの構文はJavaScriptのランタイムに影響与えない
+  しかし、enumはランタイムに残る構文でありランタイムに影響を与えている
+  TypeScriptのコンセプトにenumはそぐわないのが理由の１つ
+- 数値列挙型のEnumは方安全でない
+  ```ts
+  enum Color {
+    Red,
+    Yellow
+  }
+  const num = 10
+  const color: Color = num // エラーが発生しない
+  ```
+
+### enumの代替
+
+オブジェクト型を利用することでenumの機能を代替できる
+keyofによる型の抽出と、型アサーションのas const、typeofを使用する
