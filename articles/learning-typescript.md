@@ -482,3 +482,51 @@ declare module 'uuid' {
 
 オブジェクト型を利用することでenumの機能を代替できる
 keyofによる型の抽出と、型アサーションのas const、typeofを使用する
+
+### tsconfig
+
+- noUnusedParameters
+関数の途中の引数を使わない場合、引数名の先頭に `_` を付けることを強制するオプション
+_付けないとコンパイルエラーになる
+```ts
+dragula([this.doingList, this.todoList, this.doneList]).on("drop", (el, target, _source, sibling) => {
+  let newStatus: Status = statusMap.todo;
+  if (target.id === "doingList") newStatus = statusMap.doing;
+  if (target.id === "doneList") newStatus = statusMap.done;
+
+  onDrop(el, sibling, newStatus)
+})
+```
+
+### Assertion Functions
+
+文字列の場合のみ大文字にしたい関数があったとする
+一方で引数が何くるか分からないのでanyにしている場合はこんな感じでロジック書ける
+```ts
+function toUpper(value: any) {
+  if (typeof value !== 'string') {
+    throw new Error('avlue is not a string')
+  }
+  return value.toUpperCase()
+}
+```
+
+Assertion Functionsを使って型判定ロジックを外だしすることができる
+
+```ts
+function toUpper(value: any) {
+  assertIsString(value)  // ポイント：以降のコードではvalueはstring以外は入ってこないと扱ってくれる
+  return value.toUpperCase()
+}
+
+function assertIsString(value: any): asserts value is string { // ポイント：asserts T is U という構文
+  if (typeof value !== 'string') {
+    throw new Error('avlue is not a string')
+  }
+}
+```
+
+より複雑なanyの判定ロジックにて大きな力を発揮する
+例えばJSONはいろんな型の値を内包しているので便利
+なにより、`as`を使うこと無く`型安全`にコードを記述できる強みがある
+一方で、例外を必ず投げることになるのでエラーハンドリングが必要になる
