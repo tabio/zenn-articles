@@ -12,6 +12,37 @@ published: true
 
 https://www.amazon.co.jp/dp/4863543557
 
+## 1章
+
+### サブタイプ
+
+以下のリテラル型はどれも通常のデータ型のサブタイプとなっている
+サブタイプとは継承のようなもの
+
+```ts
+const num: 123 = 123
+const name: 'Jack' = 'Jack'
+console.log(num) // numは123型でnumber型のサブタイプ
+console.log(name) // nameは'Jack'型でstring型のサブタイプ
+name.toLowerCase() // string型のサブタイプなのでtoLowerCaseを呼び出せる
+```
+
+### リテラル型とString型の型推論
+
+letで定義したname1はstringとして推測させる
+一方で、sayHelloの引数はリテラル型として推測されるので、コンパイルエラーになる
+
+```ts
+let name1 = 'Hoge'
+
+const sayHello = (personName: 'Fuga') {
+  console.log(personName)
+}
+
+sayHello(name1) // 型 'string' の引数を型 '"Fuga"' のパラメーターに割り当てることはできません。
+```
+
+
 ## 3章
 
 ```ts:package.json
