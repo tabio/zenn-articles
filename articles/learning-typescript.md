@@ -3,7 +3,7 @@ title: "手を動かして学ぶTypeScriptの備忘録"
 emoji: "🍍"
 type: "idea" # tech: 技術記事 / idea: アイデア
 topics: ["TypeScript", "Nodejs"]
-published: false
+published: true
 ---
 
 ## はじめに
@@ -530,3 +530,35 @@ function assertIsString(value: any): asserts value is string { // ポイント�
 例えばJSONはいろんな型の値を内包しているので便利
 なにより、`as`を使うこと無く`型安全`にコードを記述できる強みがある
 一方で、例外を必ず投げることになるのでエラーハンドリングが必要になる
+
+### Conditional Types
+
+代入されるT型が { message: unknown } に代入可能であれば、T["message"] を返す。そうでなければ never を返す。
+
+```ts
+type MessageOf<T> = T extends { message: unknown } ? T["message"] : never
+
+interface Email {
+  message: string
+}
+
+interface Dog {
+  bark(): void
+}
+
+type EmailMessage = MessageOf<Email> // string
+type DogMessage = MessageOf<Dog> // never
+```
+
+### unkown型 と any型 の使い所
+
+unknownはanyと同じ様に何でも入れることができる。一方でその使い所がピンとこない。
+ポイントは、`使うかどうか` で区別する。
+
+- anyは何でも入れられて、参照も可能
+- unknownはなんでも入れられるが、参照できない(unknown型を参照しようとするコンパイルエラーになる)
+
+Conditional Typesでunkown型を使っているが、これはmesssageを参照する訳ではなく、ただその型にハマるかどうか(messageをキーに持つオブジェクトであるかどうか)だけの用途だからunkownを使っている。
+
+実際の利用シーンとしては、型を保証できないケースで利用されることが多い（外部APIのレスポンスや何かをパースした結果など）
+
