@@ -47,6 +47,25 @@ Software DesignのFlutterの記事の備忘録
     - Widgetの下層に別のWidget(子Widget)を渡し、さらの孫WidgetにもWidgetを渡していくという流れで、アプリ全体のレイアウトが管理されている
     - 厳密にはツリー構造の本体はWidgetから生成されるElementというオブジェクト
       - FlutterはElementを上手く隠蔽して開発者がWidgetに集中できるようにしてくれている
+- ホットリロードによる効率的な開発体験
+  - ソースコード上で保存するだけで変更が反映される（いちいちコンパイルしなくて良い）
+
+## UIアーキテクチャー
+
+Flutterを構成する要素としてFramework層がある
+そのFramework層にあるWidgets、Material、Cupertioについて
+
+![](https://docs.flutter.dev/assets/images/docs/arch-overview/archdiagram.png)
+
+- Wigets
+  - 基本となるシンプルなWidget
+  - デザイナーが1からデザインしたブランド独自のデザインで利用
+- Material
+  - Wigetsのラッパーでマテリアルデザインを強く意識したWidget
+  - AppBar, ElevatedButtonなど
+- Cupertino
+  - iOSが標準で提供するUIパーツをピクセル単位で再現したWidget
+  - iOSの標準的なUIを再現することができる
 
 ## Flutter SDKのインストール
 
@@ -156,3 +175,43 @@ android toolchainに注意マークが出てるので対応する
   brew install cocoapods
   [✓] Xcode - develop for iOS and macOS (Xcode 13.4.1)
   ```
+
+## Widgetでのコンストラクタ内のconstの意義
+
+constをコンストラクタの呼び出しコードに付与することで
+`コンパイル時に1つだけオブジェクトを準備して、何度同じステップが実行されてもオブジェクトが使い回される`
+という重要な仕組みのために付けている
+例えば、再描画が走った際に最初にコンストラクタで作成されたテキストやスペーサーオブジェクトを毎回生成し直すことはしない
+各オブジェクトが再描画の判断を個々に行っている
+これにより最適な再描画処理が行えている(無駄な再計算が発生しない)
+Widgetのコンストラクタ内でconst使わないとLintに怒られるぐらい根本的な設計思想がある
+
+
+```dart
+Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar:  AppBar(
+          title: const Text('Plugin example app'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              const Spacer(), // この辺
+              const TextField(),
+              const SizedBox(height: 32.0),
+              ElevatedButton(
+                onPressed: () {},
+                child: const Text('保存')
+              ),
+              const Spacer()
+            ]),
+        ),
+      ),
+    );
+  }
+```
+
+似た修飾子としてfinalがあるが、こちらは`実行時に生成したオブジェクトを1度だけ代入できる`というもの
+constは実行前（コンパイル時）にオブジェクトを生成するという違いがあるので注意
