@@ -288,3 +288,81 @@ providerはInheritedWidgetのラッパーという前提上、Flutterフレー�
 ### その他の状態管理パッケージ
 
 [List of state management approaches](https://docs.flutter.dev/development/data-and-backend/state-mgmt/options)
+
+## [flutterのテスト](https://docs.flutter.dev/testing)
+
+テストの種類は主に3つ
+
+- Unitテスト: 各クラス・メソッドのテスト
+- Widgetテスト: Widget単位のテスト。Flutter特有のテスト
+- Integrationテスト: アプリのテスト
+
+### Widgetテスト
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:myfirstapp/main.dart';
+
+void main() {
+  testWidgets('スタート画面が表示される', (WidgetTester tester) async {
+    await tester.binding
+        .setSurfaceSize(const Size(400, 800)); // テスト時の画面サイズが縦長になるように調整
+    await tester.pumpWidget(const MyApp()); // pumpWidget()でMyAppをレンダリングする
+
+    final titleFinder = find.text('スライドパズル'); // MyAppに指定の文字を含むWidgetがあることを確認
+    final buttonFinder = find.text('スタート'); // MyAppに指定の文字を含むWidgetがあることを確認
+
+    // find.textだと対象のWidgetが存在しない場合や複数存在した場合に正しくテストできない
+    // そのため特定したWidgetが期待した内容であるかを判定するためにfindsOneWidgetというMacherを使う
+    expect(find.text('スライドパズル'),
+        findsOneWidget); // MyAppに指定の文字を含むWidgetが「1つ」あることを確認
+  }); // WidgetのテストにはtestWidgetsを使う
+
+  testWidgets('スタートボタンをタップするとパズル画面が表示される', (WidgetTester tester) async {
+    await tester.binding
+        .setSurfaceSize(const Size(400, 800)); // テスト時の画面サイズが縦長になるように調整
+    await tester.pumpWidget(const MyApp()); // pumpWidget()でMyAppをレンダリングする
+
+    final buttonFinder = find.text('スタート'); // MyAppに指定の文字を含むWidgetがあることを確認
+    await tester.tap(buttonFinder); // テスト時にボタンをタップする
+    await tester.pumpAndSettle(); // テスト時にボタンをタップ後に画面を更新、表示されるのを待つためのメソッド
+
+    expect(find.text('1'), findsOneWidget); // MyAppに指定の文字を含むWidgetが「1つ」あることを確認
+    expect(
+        find.text('シャッフル'), findsOneWidget); // MyAppに指定の文字を含むWidgetが「1つ」あることを確認
+  }); // WidgetのテストにはtestWidgetsを使う
+}
+```
+
+flutter testコマンドでテスト実行
+
+```sh
+flutter test
+00:01 +0: スタート画面が表示される
+00:02 +0: スタート画面が表示される
+00:02 +1: スタート画面が表示される
+00:02 +1: All tests passed!
+```
+
+## DevTools
+
+アプリをデバッグ起動している状態で以下のコマンドをターミナルから実行する
+
+```sh
+flutter run
+```
+
+以下の様なURLをクリックするよう案内される
+
+```
+The Flutter DevTools debugger and profiler on iPhone SE (3rd generation) is available at: http://127.0.0.1:9101?uri=http://127.0.0.1:57013/XOctQCj94pc=/
+```
+
+ブラウザで該当のURLをクリックすると以下のようなデバッグツールが表示される
+Flutter InspectorタブではWidget Treeが確認できる
+該当のWidgetをクリックして、カーソルを合わせるとWigetが持つプロパティ一覧が閲覧できる
+現在保存されている値を確認したり、親子関係を把握するなどに有用
+
+![](../images/flutter-software-design/DevTool.png)
